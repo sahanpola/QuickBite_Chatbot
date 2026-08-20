@@ -67,3 +67,9 @@ class Route(str, Enum):
     HELP = "help"
     GREETING = "greeting"
     FALLBACK = "fallback"
+
+#Result returned by a conversation handler.
+@dataclass
+class HandlerResult:
+    message: str
+    completed: bool = False
