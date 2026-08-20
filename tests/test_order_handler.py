@@ -78,6 +78,7 @@ def test_order_flow_collects_address() -> None:
     state = state_manager.get_state("user_001")
 
     assert state.entities.address == "123 Main Street"
+    assert state.entities.quantity == 2
     assert state.step == ConversationStep.AWAITING_CONFIRMATION
     assert "confirm" in response.message.lower()
 

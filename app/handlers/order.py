@@ -13,18 +13,25 @@ class OrderHandler:
 
         state = self.state_manager.get_state(user_id)
 
-        # Start or continue the ordering flow.
         state.intent = Intent.ORDER_FOOD
 
-        # Merge entities extracted from the current message.
-        self.state_manager.update_entities(
-            user_id,
-            result.entities,
-        )
+        # When waiting for an address, the raw message should be
+        # interpreted as the address rather than generic NLP entities.
+        if state.step == ConversationStep.AWAITING_ADDRESS:
+            address = message.strip()
+
+            if address:
+                state.entities.address = address
+
+        else:
+            self.state_manager.update_entities(
+                user_id,
+                result.entities,
+            )
 
         state = self.state_manager.get_state(user_id)
 
-        # Reject invalid quantities before continuing the order flow.
+        # Validate quantity before continuing the flow.
         if (
             state.entities.quantity is not None
             and state.entities.quantity <= 0
@@ -36,23 +43,31 @@ class OrderHandler:
                 message=(
                     "Quantity must be greater than zero. "
                     "How many would you like?"
-                ),
+                )
             )
-
-        # If we are specifically waiting for an address,
-        # treat the raw message as the address.
-        if (
-            state.step == ConversationStep.AWAITING_ADDRESS
-            and state.entities.address is None
-        ):
-            address = message.strip()
-
-            if address:
-                state.entities.address = address
 
         # 1. Dish
         if state.entities.dish is None:
             state.step = ConversationStep.AWAITING_DISH
+
+            if state.entities.category == "Pizza":
+                return HandlerResult(
+                    message=(
+                        "Which pizza would you like? "
+                        "Margherita Pizza, Pepperoni Pizza, "
+                        "or Veggie Supreme Pizza?"
+                    )
+            )
+
+            if state.entities.category == "Burger":
+                return HandlerResult(
+                    message=(
+                        "Which burger would you like? "
+                        "Classic Cheeseburger or BBQ Bacon Burger?"
+                    )
+                )
+
+
 
             return HandlerResult(
                 message="Which dish would you like?",

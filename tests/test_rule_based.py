@@ -1,6 +1,7 @@
 from app.backend.mock_backend import MockBackend
 from app.models.schemas import Intent
 from app.nlp.rule_based import RuleBasedNLP
+from app.chatbot import QuickBiteChatbot
 
 
 def create_nlp() -> RuleBasedNLP:
@@ -95,3 +96,36 @@ def test_specific_burger_keyword() -> None:
 
     assert result.intent == Intent.ORDER_FOOD
     assert result.entities.dish == "Classic Cheeseburger"
+
+def test_cheese_alias_matches_classic_cheeseburger() -> None:
+    nlp = create_nlp()
+
+    result = nlp.classify("Cheese")
+
+    assert result.entities.dish == "Classic Cheeseburger"
+
+
+def test_bbq_alias_matches_bbq_bacon_burger() -> None:
+    nlp = create_nlp()
+
+    result = nlp.classify("BBQ")
+
+    assert result.entities.dish == "BBQ Bacon Burger"
+
+def test_burger_category_then_bbq_selection() -> None:
+    chatbot = QuickBiteChatbot()
+
+    response = chatbot.process_message(
+        "user_001",
+        "I wanna Burger",
+    )
+
+    assert "Which burger" in response
+
+    response = chatbot.process_message(
+        "user_001",
+        "BBQ",
+    )
+
+    assert "How many" in response
+    assert "BBQ Bacon Burger" in response

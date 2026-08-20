@@ -11,6 +11,7 @@ class RuleBasedNLP:
         r"\b(i'd like|i would like)\b",
     )
 
+
     TRACK_PATTERNS = (
         r"\btrack\b",
         r"\bwhere\s+(?:is|are)\b",
@@ -38,9 +39,42 @@ class RuleBasedNLP:
     ORDER_ID_PATTERN = re.compile(r"\bQB-\d{4}\b", re.IGNORECASE)
     QUANTITY_PATTERN = re.compile(r"\b(\d+)\b")
 
+    CATEGORY_MAP = {
+        "pizza": "Pizza",
+        "burger": "Burger",
+        "salad": "Salad",
+        "wrap": "Wrap",
+        "dessert": "Dessert",
+        "cake": "Dessert",
+        }
+
+    DISH_ALIASES = {
+    "margherita": "Margherita Pizza",
+    "pepperoni": "Pepperoni Pizza",
+    "veggie": "Veggie Supreme Pizza",
+    "veggie supreme": "Veggie Supreme Pizza",
+
+    "cheese": "Classic Cheeseburger",
+    "cheeseburger": "Classic Cheeseburger",
+    "classic": "Classic Cheeseburger",
+
+    "bbq": "BBQ Bacon Burger",
+    "bacon": "BBQ Bacon Burger",
+    "bbq bacon": "BBQ Bacon Burger",
+
+    "caesar": "Caesar Salad",
+
+    "chicken wrap": "Grilled Chicken Wrap",
+    "grilled chicken": "Grilled Chicken Wrap",
+
+    "lava cake": "Chocolate Lava Cake",
+    "chocolate": "Chocolate Lava Cake",
+}
+
     def __init__(self, menu: dict[str, float]) -> None:
         self.menu = menu
 
+    
     #Classify intent and extract entities from a message.
     def classify(self, message: str) -> NLPResult:
         
@@ -81,6 +115,9 @@ class RuleBasedNLP:
         if self._matches_any(message, self.ORDER_PATTERNS):
             return Intent.ORDER_FOOD
 
+        if self._match_dish(message) or self._match_category(message):
+            return Intent.ORDER_FOOD
+
         if self._matches_any(message, self.HELP_PATTERNS):
             return Intent.HELP
 
@@ -104,6 +141,7 @@ class RuleBasedNLP:
             entities.quantity = int(quantity_match.group(1))
 
         entities.dish = self._match_dish(message)
+        entities.category = self._match_category(message)
 
         confirmation = self._extract_confirmation(message)
         if confirmation is not None:
@@ -116,12 +154,20 @@ class RuleBasedNLP:
 
         normalized = message.lower()
 
-        # 1. Prefer full menu-item matches.
+        #  Prefer full menu-item matches.
         for dish in self.menu:
             if dish.lower() in normalized:
                 return dish
 
-        # 2. Match distinctive words from menu items.
+         # Known natural aliases.
+        for alias, dish in self.DISH_ALIASES.items():
+            if re.search(
+                rf"\b{re.escape(alias)}\b",
+                normalized,
+            ):
+                return dish
+        return None
+        # Match distinctive words from menu items.
         generic_words = {
             "pizza",
             "burger",
@@ -220,3 +266,12 @@ class RuleBasedNLP:
             return 0.95
 
         return 0.50
+
+    def _match_category(self, message: str) -> str | None:
+        normalized = message.lower()
+                    
+        for keyword, category in self.CATEGORY_MAP.items():
+            if re.search(rf"\b{re.escape(keyword)}\b", normalized):
+                return category
+        
+        return None
