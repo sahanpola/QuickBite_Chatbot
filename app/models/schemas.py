@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass,field
 from enum import Enum 
 from typing import Optional 
 
@@ -27,4 +27,33 @@ class NLPResult :
     intent: Intent
     entities: Entities 
     confidence: float=0.0 
-    
+
+
+#Add All Current Converstation state 
+
+class ConversationStep(str,Enum): 
+    START ="start"
+    AWAITING_DISH = "awaiting_dish"
+    AWAITING_QUANTITY = "awaiting_quantity"
+    AWAITING_ADDRESS = "awaiting_address"
+    AWAITING_CONFIRMATION = "awaiting_confirmation"
+
+    AWAITING_ORDER_ID = "awaiting_order_id"
+    AWAITING_CANCELLATION_CONFIRMATION = (
+        "awaiting_cancellation_confirmation"
+    )
+
+    COMPLETED = "completed"
+
+
+
+
+#Strore the current state of a user's conversation 
+@dataclass
+class ConversationState:
+    user_id:str 
+    intent:Intent=Intent.UNKNOWN 
+    step: ConversationStep = ConversationStep.START
+    entities: Entities = field(default_factory=Entities)
+
+
