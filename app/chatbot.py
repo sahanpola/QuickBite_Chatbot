@@ -9,6 +9,8 @@ from app.handlers.order import OrderHandler
 from app.handlers.track import TrackHandler
 from app.models.schemas import Route
 from app.nlp.rule_based import RuleBasedNLP
+from app.nlp.llm_classifier import LLMClassifier,LLMClassifierError
+from app.models.schemas import ConversationStep, Route
 
 
 class QuickBiteChatbot:
@@ -21,6 +23,9 @@ class QuickBiteChatbot:
         self.nlp = RuleBasedNLP(self.backend.get_menu())
         self.dispatcher = Dispatcher()
         self.response_generator = ResponseGenerator()
+
+        self.llm_classifier = LLMClassifier()
+        self.rule_confidence_threshold = 0.80
 
         self.order_handler = OrderHandler(
             state_manager=self.state_manager,
@@ -41,17 +46,38 @@ class QuickBiteChatbot:
 
 
     #Process one user message through the chatbot pipeline.
-    def process_message(self,user_id: str, message: str,) -> str:
+    def process_message(
+        self,
+        user_id: str,
+        message: str,
+    ) -> str:
+        """Process one user message through the chatbot pipeline."""
 
         parsed_message = self.input_parser.parse(message)
 
-        nlp_result = self.nlp.classify(parsed_message)
-
         state = self.state_manager.get_state(user_id)
 
+        nlp_result = self.nlp.classify(parsed_message)
+
+        conversation_is_active = (
+            state.step != ConversationStep.START
+        )
+
+        if (
+            not conversation_is_active
+            and nlp_result.confidence < self.rule_confidence_threshold
+        ):
+            try:
+                nlp_result = self.llm_classifier.classify(
+                    parsed_message
+                )
+            except LLMClassifierError:
+                # Keep the rule-based result so the chatbot can
+                # continue with its deterministic fallback.
+                pass
         route = self.dispatcher.dispatch(
-            nlp_result,
-            state,
+             nlp_result,
+             state,
         )
 
         if route == Route.ORDER:
