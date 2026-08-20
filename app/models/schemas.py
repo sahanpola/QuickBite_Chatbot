@@ -57,3 +57,13 @@ class ConversationState:
     entities: Entities = field(default_factory=Entities)
 
 
+#Available application routes.
+class Route(str, Enum):
+    
+
+    ORDER = "order"
+    TRACK = "track"
+    CANCEL = "cancel"
+    HELP = "help"
+    GREETING = "greeting"
+    FALLBACK = "fallback"
