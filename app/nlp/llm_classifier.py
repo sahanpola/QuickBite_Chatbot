@@ -62,6 +62,17 @@ class LLMClassifier:
 
     If no menu item clearly matches, set dish to null.
 
+    Intent rules:
+
+    - help: only when the user explicitly asks what QuickBite can do or asks for help using the food-ordering service.
+    - unknown: use for requests outside food ordering, order tracking, cancellation, greetings, or QuickBite help.
+
+    Examples:
+    - "What can you do?" -> help
+    - "Help me place an order" -> help
+    - "What is the weather today?" -> unknown
+    - "Tell me a joke" -> unknown
+
     Return ONLY valid JSON in this exact structure:
 
     {{

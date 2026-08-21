@@ -265,3 +265,22 @@ def test_invalid_dish_recovers_with_menu_options() -> None:
     )
 
     assert "How many BBQ Bacon Burger" in response
+
+
+def test_fallback_flow() -> None:
+    chatbot = QuickBiteChatbot()
+
+    chatbot.llm_classifier.classify = MagicMock(
+        return_value=NLPResult(
+            intent=Intent.UNKNOWN,
+            entities=Entities(),
+            confidence=1.0,
+        )
+    )
+
+    response = chatbot.process_message(
+        "user_001",
+        "What is the weather today?",
+    )
+
+    assert "didn't understand" in response.lower()
