@@ -28,6 +28,9 @@ class StateManager:
         if entities.category is not None:
             state.entities.category = entities.category
 
+        if entities.requested_dish is not None:
+            state.entities.requested_dish = entities.requested_dish
+
         if entities.quantity is not None:
             state.entities.quantity = entities.quantity
 

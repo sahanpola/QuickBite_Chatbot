@@ -129,3 +129,24 @@ def test_burger_category_then_bbq_selection() -> None:
 
     assert "How many" in response
     assert "BBQ Bacon Burger" in response
+
+def test_unknown_menu_item_is_extracted_as_requested_dish() -> None:
+    nlp = create_nlp()
+
+    result = nlp.classify(
+        "I want a unicorn burger"
+    )
+
+    assert result.intent == Intent.ORDER_FOOD
+    assert result.entities.dish is None
+    assert result.entities.category == "Burger"
+    assert result.entities.requested_dish == "unicorn burger"
+
+def test_generic_burger_is_not_invalid_dish() -> None:
+    nlp = create_nlp()
+
+    result = nlp.classify("I want burger")
+
+    assert result.intent == Intent.ORDER_FOOD
+    assert result.entities.category == "Burger"
+    assert result.entities.requested_dish is None

@@ -140,8 +140,17 @@ class RuleBasedNLP:
         if quantity_match:
             entities.quantity = int(quantity_match.group(1))
 
-        entities.dish = self._match_dish(message)
-        entities.category = self._match_category(message)
+        matched_dish = self._match_dish(message)
+        category = self._match_category(message)
+
+        entities.dish = matched_dish
+        entities.category = category
+
+        entities.requested_dish = self._extract_requested_dish(
+             message=message,
+             matched_dish=matched_dish,
+            category=category,
+        )
 
         confirmation = self._extract_confirmation(message)
         if confirmation is not None:
@@ -274,4 +283,61 @@ class RuleBasedNLP:
             if re.search(rf"\b{re.escape(keyword)}\b", normalized):
                 return category
         
+        return None
+
+    def _extract_requested_dish(
+        self,
+        message: str,
+        matched_dish: str | None,
+        category: str | None,
+    ) -> str | None:
+        """Extract a dish-like phrase that is not available on the menu."""
+
+        # If we already found a valid menu item,
+        # there is no invalid requested dish.
+        if matched_dish is not None:
+            return None
+
+        normalized = message.lower().strip()
+
+        patterns = (
+            r"\bi\s+want\s+(?:a|an|the)?\s*(.+)",
+            r"\bi\s+wanna\s+(?:a|an|the)?\s*(.+)",
+            r"\bi(?:'d| would)\s+like\s+(?:a|an|the)?\s*(.+)",
+            r"\border\s+(?:a|an|the)?\s*(.+)",
+            r"\bget\s+me\s+(?:a|an|the)?\s*(.+)",
+        )
+
+        candidate = None
+
+        for pattern in patterns:
+            match = re.search(pattern, normalized)
+
+            if match:
+                candidate = match.group(1).strip(" .!?")
+                break
+
+        if not candidate:
+            return None
+
+        # Category-only requests are valid and should not
+        # be treated as unknown menu items.
+        generic_categories = {
+            "pizza",
+            "burger",
+            "salad",
+            "wrap",
+            "dessert",
+            "cake",
+            "food",
+        }
+
+        if candidate in generic_categories:
+            return None
+
+        # We only treat it as a requested dish when it
+        # looks related to a known food category.
+        if category is not None:
+            return candidate
+
         return None

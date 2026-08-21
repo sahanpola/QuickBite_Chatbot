@@ -50,6 +50,18 @@ class LLMClassifier:
     - Grilled Chicken Wrap
     - Chocolate Lava Cake
 
+     When the user describes food indirectly, infer the closest menu item
+    only when there is a strong match.
+
+    Examples:
+    - "something smoky and filling" -> BBQ Bacon Burger
+    - "something with bacon" -> BBQ Bacon Burger
+    - "a vegetarian pizza" -> Veggie Supreme Pizza
+    - "something sweet with chocolate" -> Chocolate Lava Cake
+    - "a chicken wrap" -> Grilled Chicken Wrap
+
+    If no menu item clearly matches, set dish to null.
+
     Return ONLY valid JSON in this exact structure:
 
     {{

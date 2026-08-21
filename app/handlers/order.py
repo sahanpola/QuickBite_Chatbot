@@ -46,6 +46,27 @@ class OrderHandler:
                 )
             )
 
+        if (
+                    state.entities.dish is None
+                    and state.entities.requested_dish is not None
+                ):
+                    invalid_dish = state.entities.requested_dish
+        
+                    state.entities.requested_dish = None
+                    state.step = ConversationStep.AWAITING_DISH
+        
+                    menu_items = ", ".join(
+                        self.backend.get_menu().keys()
+                    )
+        
+                    return HandlerResult(
+                        message=(
+                            f'Sorry, I couldn\'t find "{invalid_dish}" '
+                            f"on our menu. Here are today's options: "
+                            f"{menu_items}. Which would you like?"
+                        )
+                )
+
         # 1. Dish
         if state.entities.dish is None:
             state.step = ConversationStep.AWAITING_DISH
@@ -72,6 +93,8 @@ class OrderHandler:
             return HandlerResult(
                 message="Which dish would you like?",
             )
+        
+       
 
         # 2. Quantity
         if state.entities.quantity is None:

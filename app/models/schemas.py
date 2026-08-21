@@ -17,6 +17,7 @@ class Intent(str,Enum):
 class Entities:
     dish: Optional[str] = None
     category: Optional[str] = None
+    requested_dish: Optional[str] = None
     quantity: Optional[int] = None
     address: Optional[str] = None
     order_id: Optional[str] = None

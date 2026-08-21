@@ -57,27 +57,35 @@ class QuickBiteChatbot:
 
         state = self.state_manager.get_state(user_id)
 
+        # First try deterministic NLP.
         nlp_result = self.nlp.classify(parsed_message)
 
-        conversation_is_active = (
-            state.step != ConversationStep.START
-        )
+        # LLM is useful for new requests and semantic dish selection,
+        # but not for structured multi-turn fields such as quantity,
+        # address, confirmation, or order ID.
+        llm_allowed = state.step in {
+            ConversationStep.START,
+            ConversationStep.AWAITING_DISH,
+        }
 
         if (
-            not conversation_is_active
+            llm_allowed
             and nlp_result.confidence < self.rule_confidence_threshold
         ):
             try:
+
                 nlp_result = self.llm_classifier.classify(
                     parsed_message
                 )
+
             except LLMClassifierError:
-                # Keep the rule-based result so the chatbot can
-                # continue with its deterministic fallback.
+
+                # Keep the original rule-based NLP result.
                 pass
+
         route = self.dispatcher.dispatch(
-             nlp_result,
-             state,
+            nlp_result,
+            state,
         )
 
         if route == Route.ORDER:
@@ -100,7 +108,9 @@ class QuickBiteChatbot:
             )
 
         else:
-            handler_result = self.fallback_handler.handle(route)
+            handler_result = self.fallback_handler.handle(
+                route
+            )
 
         return self.response_generator.generate(
             handler_result

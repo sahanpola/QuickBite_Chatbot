@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 from app.models.schemas import Entities, Intent, NLPResult
 from app.nlp.llm_classifier import LLMClassifierError
-
+from app.models.schemas import ConversationStep
 
 def test_complete_order_flow() -> None:
     chatbot = QuickBiteChatbot()
@@ -240,3 +240,28 @@ def test_llm_failure_falls_back_gracefully() -> None:
     chatbot.llm_classifier.classify.assert_called_once()
 
     assert "didn't understand" in response.lower()
+
+def test_invalid_dish_recovers_with_menu_options() -> None:
+    chatbot = QuickBiteChatbot()
+    user_id = "user_001"
+
+    response = chatbot.process_message(
+        user_id,
+        "I want a unicorn burger",
+    )
+
+    assert "couldn't find" in response.lower()
+    assert "unicorn burger" in response.lower()
+    assert "Pepperoni Pizza" in response
+    assert "BBQ Bacon Burger" in response
+
+    state = chatbot.state_manager.get_state(user_id)
+
+    assert state.step == ConversationStep.AWAITING_DISH
+
+    response = chatbot.process_message(
+        user_id,
+        "BBQ",
+    )
+
+    assert "How many BBQ Bacon Burger" in response
